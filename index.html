@@ -139,6 +139,11 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
+
+        /* DB Sync Notif */
+        #dbStatus {
+            transition: opacity 0.3s ease;
+        }
     </style>
 </head>
 <body class="h-screen w-screen flex justify-center items-center">
@@ -163,8 +168,9 @@
                     <input type="text" id="inputName" class="w-full mt-1 neu-box-inset p-3 outline-none bg-transparent" placeholder="Ketik nama Anda...">
                 </div>
                 <div>
+                    <!-- Saran: Type diganti jadi text untuk mencegah NIK kehilangan angka 0 di depan -->
                     <label class="text-xs font-semibold text-gray-500 ml-2">NIK</label>
-                    <input type="number" id="inputNik" class="w-full mt-1 neu-box-inset p-3 outline-none bg-transparent" placeholder="Ketik NIK Anda...">
+                    <input type="text" id="inputNik" class="w-full mt-1 neu-box-inset p-3 outline-none bg-transparent" placeholder="Ketik NIK Anda...">
                 </div>
                 <button onclick="goToBriefing()" class="neu-btn mt-4 py-3 font-bold text-[var(--primary)] w-full">MASUK</button>
             </div>
@@ -271,10 +277,16 @@
             <h2 class="text-2xl font-bold text-[var(--primary)] mt-6 mb-2">Simulasi Selesai!</h2>
             <div id="finalAvatar" class="text-6xl mb-4">🏆</div>
             
-            <div class="neu-box-inset w-full p-6 mb-6">
+            <div class="neu-box-inset w-full p-6 mb-6 relative">
                 <p class="text-sm text-gray-500 font-semibold">SKOR KEPEMIMPINAN</p>
                 <h1 id="finalScore" class="text-5xl font-bold text-[var(--primary)] my-2">85%</h1>
                 <p id="finalTitle" class="text-lg font-bold text-[var(--success)]">Resonant Leader</p>
+
+                <!-- Database Sync Status Indicator (Menandakan state API) -->
+                <div id="dbStatus" class="absolute top-4 right-4 flex items-center gap-1 opacity-0">
+                    <div id="dbIcon" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></div>
+                    <span id="dbText" class="text-[10px] text-gray-500 font-bold">Menyinkronkan...</span>
+                </div>
             </div>
             
             <div class="w-full text-left neu-box p-5 mb-6 text-sm">
@@ -289,7 +301,7 @@
                 </div>
             </div>
             
-            <button onclick="location.reload()" class="neu-btn py-4 font-bold text-gray-600 w-full mb-8">KEMBALI KE BERANDA</button>
+            <button id="btnBackHome" onclick="location.reload()" class="neu-btn py-4 font-bold text-gray-600 w-full mb-8">MEMPROSES DATA...</button>
         </div>
 
     </div>
@@ -425,6 +437,10 @@
 
         let selectedResponseData = null;
 
+        // [ANALYTICS VARIABLES]
+        let gameStartTime = null; 
+        let scenarioLogs = []; 
+
         // --- 3. AUDIO ENGINE (Web Audio API) ---
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
@@ -447,7 +463,6 @@
                 document.getElementById('btnAudio').innerHTML = audioEnabled ? '🔊' : '🔇';
                 if(bgmGain) {
                     bgmGain.gain.cancelScheduledValues(audioCtx.currentTime);
-                    // Sesuaikan volume maksimal dengan volume lagu baru (0.1)
                     bgmGain.gain.setTargetAtTime(audioEnabled ? 0.1 : 0, audioCtx.currentTime, 0.1);
                 }
             }
@@ -470,17 +485,14 @@
         function playBGM() {
             if (!audioCtx) return;
             
-            // Hentikan BGM sebelumnya jika ada
             if (bgmInterval) {
                 clearInterval(bgmInterval);
             }
 
             bgmGain = audioCtx.createGain();
-            // Volume sedikit diturunkan (0.1) karena nada lebih cepat agar tidak berisik
             bgmGain.gain.value = audioEnabled ? 0.1 : 0; 
             bgmGain.connect(audioCtx.destination);
             
-            // Nada C Major yang ceria dan melompat-lompat (Bouncy Synth)
             const notes = [
                 261.63, // C4
                 329.63, // E4
@@ -499,28 +511,24 @@
                 if (audioCtx.state === 'suspended') audioCtx.resume();
 
                 const osc = audioCtx.createOscillator();
-                osc.type = 'sine'; // Sine wave untuk suara bulat dan imut
+                osc.type = 'sine'; 
                 osc.frequency.setValueAtTime(notes[noteIdx], audioCtx.currentTime);
                 
                 const env = audioCtx.createGain();
                 env.gain.setValueAtTime(0, audioCtx.currentTime);
-                // Efek "Pluck" / Marimba: Serangan suara cepat, lalu memudar seketika
                 env.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
                 env.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3); 
                 
                 osc.connect(env);
                 env.connect(bgmGain);
                 osc.start();
-                osc.stop(audioCtx.currentTime + 0.4); // Potong suara agar terdengar "bouncy"
+                osc.stop(audioCtx.currentTime + 0.4); 
                 
                 noteIdx = (noteIdx + 1) % notes.length;
             }
             
             scheduleNextNote();
-            
-            // Loop lebih cepat untuk kesan ceria dan energik (tiap 350ms)
             bgmInterval = setInterval(scheduleNextNote, 350); 
-            
             bgmOsc = true; 
         }
 
@@ -534,13 +542,12 @@
         
         function startHoldSound() {
             if (!audioCtx || !audioEnabled) return;
-            stopHoldSound(); // Pastikan tidak ada suara menumpuk
+            stopHoldSound(); 
             
             holdOsc = audioCtx.createOscillator();
             holdGain = audioCtx.createGain();
             
             holdOsc.type = 'sine';
-            // Frekuensi naik perlahan dari 200hz ke 600hz selama 3 detik (menggambarkan tarikan napas/ketegangan)
             holdOsc.frequency.setValueAtTime(200, audioCtx.currentTime);
             holdOsc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 3);
             
@@ -558,7 +565,7 @@
                     holdGain.gain.cancelScheduledValues(audioCtx.currentTime);
                     holdGain.gain.setValueAtTime(holdGain.gain.value, audioCtx.currentTime);
                     holdGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-                    const oscToStop = holdOsc; // simpan referensi
+                    const oscToStop = holdOsc; 
                     setTimeout(() => {
                         if (oscToStop) {
                             try { oscToStop.stop(); } catch(e){}
@@ -571,35 +578,31 @@
         }
 
         function sfxHoldComplete() {
-            stopHoldSound(); // Hentikan suara tarikan napas
+            stopHoldSound(); 
             playSynth(440, 'sine', 0.2, 0.1);
-            setTimeout(() => playSynth(659, 'sine', 0.4, 0.1), 150); // Bunyi "Ting" melegakan
+            setTimeout(() => playSynth(659, 'sine', 0.4, 0.1), 150); 
         }
 
         function sfxCorrect() {
-            // Suara ceria (Nada Mayor naik)
-            playSynth(523.25, 'sine', 0.1, 0.1); // C5
-            setTimeout(() => playSynth(659.25, 'sine', 0.1, 0.1), 100); // E5
-            setTimeout(() => playSynth(783.99, 'sine', 0.3, 0.1), 200); // G5
+            playSynth(523.25, 'sine', 0.1, 0.1); 
+            setTimeout(() => playSynth(659.25, 'sine', 0.1, 0.1), 100); 
+            setTimeout(() => playSynth(783.99, 'sine', 0.3, 0.1), 200); 
         }
 
         function sfxWrong() {
-            // Suara error/negatif (Nada rendah turun / buzz)
             playSynth(150, 'sawtooth', 0.2, 0.1);
             setTimeout(() => playSynth(130, 'sawtooth', 0.3, 0.1), 150);
         }
 
         function sfxGameStart() {
-            // Suara saat masuk ke permainan utama (seperti level up cepat)
-            playSynth(261.63, 'sine', 0.1, 0.1); // C4
-            setTimeout(() => playSynth(329.63, 'sine', 0.1, 0.1), 100); // E4
-            setTimeout(() => playSynth(392.00, 'sine', 0.2, 0.1), 200); // G4
-            setTimeout(() => playSynth(523.25, 'sine', 0.4, 0.1), 300); // C5
+            playSynth(261.63, 'sine', 0.1, 0.1); 
+            setTimeout(() => playSynth(329.63, 'sine', 0.1, 0.1), 100); 
+            setTimeout(() => playSynth(392.00, 'sine', 0.2, 0.1), 200); 
+            setTimeout(() => playSynth(523.25, 'sine', 0.4, 0.1), 300); 
         }
 
         function sfxWinGame() {
-            // Suara ucapan selamat (fanfare meriah)
-            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            const notes = [523.25, 659.25, 783.99, 1046.50]; 
             notes.forEach((freq, idx) => {
                 setTimeout(() => playSynth(freq, 'square', 0.2, 0.05), idx * 150);
             });
@@ -607,7 +610,6 @@
         }
 
         function sfxLoseGame() {
-            // Suara game over / gagal (nada sumbang turun)
             const notes = [300, 280, 250, 200];
             notes.forEach((freq, idx) => {
                 setTimeout(() => playSynth(freq, 'sawtooth', 0.3, 0.1), idx * 250);
@@ -623,7 +625,6 @@
             
             document.getElementById('playerNameDisplay').innerText = playerName;
             
-            // Init audio context on first user interaction to bypass browser autoplay policy
             if(!audioCtx) initAudio();
 
             document.getElementById('screenGateway').style.opacity = 0;
@@ -635,7 +636,10 @@
         }
 
         function startGame() {
-            sfxGameStart(); // Panggil efek suara saat masuk game
+            // [ANALYTICS] Catat waktu awal permainan dimulai
+            gameStartTime = new Date();
+
+            sfxGameStart(); 
             document.getElementById('screenBriefing').style.opacity = 0;
             setTimeout(() => {
                 document.getElementById('screenBriefing').classList.add('hidden');
@@ -646,7 +650,6 @@
         }
 
         function updateThermometer(value) {
-            // value is delta.
             thermoLevel += value;
             if (thermoLevel < 10) thermoLevel = 10;
             if (thermoLevel > 95) thermoLevel = 95;
@@ -700,18 +703,16 @@
             
             const q = scenarios[currentQuestion];
             
-            // 1. Simulate incoming messages
             let delay = 500;
             q.trigger.forEach((msg, idx) => {
                 setTimeout(() => {
                     addChatMessage(msg.sender, msg.text, false);
                     triggerScreenShake();
-                    updateThermometer(15); // Spike tension
+                    updateThermometer(15); 
                 }, delay);
                 delay += 1200;
             });
 
-            // 2. Show HOLD button after messages finish
             setTimeout(() => {
                 document.getElementById('uiHold').classList.remove('hidden');
                 document.getElementById('uiHold').classList.add('flex');
@@ -727,7 +728,6 @@
             document.getElementById('uiDelivery').classList.add('hidden');
             document.getElementById('uiDelivery').classList.remove('flex');
             
-            // reset button visual
             const btn = document.getElementById('btnHold');
             btn.classList.remove('breathing');
             document.getElementById('holdProgress').style.width = '0%';
@@ -737,8 +737,6 @@
 
         function setupHoldButton() {
             const btn = document.getElementById('btnHold');
-            
-            // Remove old listeners to prevent duplication
             const newBtn = btn.cloneNode(true);
             btn.parentNode.replaceChild(newBtn, btn);
             
@@ -758,14 +756,12 @@
             const progress = document.getElementById('holdProgress');
             btn.classList.add('breathing');
             
-            startHoldSound(); // Memulai suara tarikan napas (nada naik perlahan)
+            startHoldSound(); 
             
             holdInterval = setInterval(() => {
-                holdTimeMs += 50; // update every 50ms
+                holdTimeMs += 50; 
                 let pct = (holdTimeMs / HOLD_REQUIRED) * 100;
                 progress.style.width = `${pct}%`;
-                
-                // Tick dihapus, diganti sweep frekuensi continuous
                 
                 if (holdTimeMs >= HOLD_REQUIRED) {
                     completeHold();
@@ -779,15 +775,14 @@
             clearInterval(holdInterval);
             document.getElementById('btnHold').classList.remove('breathing');
             document.getElementById('holdProgress').style.width = '0%';
-            stopHoldSound(); // Hentikan suara jika dilepas sebelum 3 detik
+            stopHoldSound(); 
         }
 
         function completeHold() {
             cancelHold();
             sfxHoldComplete();
-            updateThermometer(-10); // calming down a bit
+            updateThermometer(-10); 
             
-            // Transition to Response Selection
             document.getElementById('uiHold').classList.add('hidden');
             document.getElementById('uiHold').classList.remove('flex');
             showResponseSelection();
@@ -799,7 +794,6 @@
             const q = scenarios[currentQuestion];
             const ui = document.getElementById('uiResponse');
             
-            // Shuffle options slightly (just swap sometimes)
             const isSwapped = Math.random() > 0.5;
             
             document.getElementById('btnResp0').innerText = q.responses[isSwapped ? 1 : 0].text;
@@ -861,11 +855,13 @@
         function processTurn(respCorrect, delCorrect) {
             const q = scenarios[currentQuestion];
             
-            // Post player message
             addChatMessage("Anda (Manager)", selectedResponseData.text, true);
             
-            // Calculate outcome
             let isTotalSuccess = respCorrect && delCorrect;
+            
+            // [ANALYTICS] Catat status (Sukses/Gagal) log di Skenario yang sedang berjalan
+            scenarioLogs[currentQuestion] = isTotalSuccess;
+
             let feedbackText = "";
             let teamReplyText = "";
             
@@ -883,11 +879,9 @@
                 teamReplyText = q.teamReply.fail;
             }
 
-            // Post team reply
             setTimeout(() => {
                 addChatMessage("Tim Operasional", teamReplyText, false);
                 
-                // Show floating feedback logic
                 setTimeout(() => {
                     showInGameFeedback(isTotalSuccess, feedbackText);
                 }, 1000);
@@ -917,7 +911,6 @@
         function endGame() {
             document.getElementById('screenGame').style.opacity = 0;
             
-            // Mengecilkan volume BGM (Fade out ringan) saat akhir permainan
             if (bgmGain && audioCtx) {
                  bgmGain.gain.cancelScheduledValues(audioCtx.currentTime);
                  bgmGain.gain.setTargetAtTime(0.02, audioCtx.currentTime, 0.5); 
@@ -930,6 +923,96 @@
                 generateDebrief();
             }, 500);
         }
+
+        // ==========================================
+        // 🚀 API INTEGRATION: SEND DATA TO GOOGLE SHEETS
+        // ==========================================
+
+        /**
+         * Fungsi client-side (fetch) untuk integrasi Google Apps Script
+         * 100% Cocok dengan parameter header yang disediakan.
+         */
+        function sendGameDataToGoogleSheets(percentage, title, badgesText) {
+            
+            // Hitung Durasi Real-Time dari saat game dimulai
+            const endTime = new Date();
+            let durationStr = "00:00";
+            if (gameStartTime) {
+                const diffMs = endTime - gameStartTime;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffSecs = Math.floor((diffMs % 60000) / 1000);
+                durationStr = `${diffMins.toString().padStart(2, '0')}:${diffSecs.toString().padStart(2, '0')}`;
+            }
+
+            // Dapatkan Elemen UI untuk merubah status fetching
+            const dbStatus = document.getElementById('dbStatus');
+            const dbIcon = document.getElementById('dbIcon');
+            const dbText = document.getElementById('dbText');
+            const btnBack = document.getElementById('btnBackHome');
+            
+            // Tampilkan animasi status
+            dbStatus.style.opacity = 1;
+            btnBack.disabled = true;
+            btnBack.classList.add('opacity-50', 'cursor-not-allowed');
+
+            // Susun Payload dengan Key Identik ke Google Sheets
+            const payload = {
+                "Timestamp_Selesai": endTime.toLocaleString('id-ID'), // Format Lokal Indonesia
+                "NIK": playerNik,
+                "Nama_Lengkap": playerName,
+                "Durasi_Simulasi": durationStr,
+                "Suhu_Emosi_Akhir": thermoLevel,
+                "Total_Skor_3T": score,
+                "Persentase_Performa": `${percentage}%`,
+                "Profil_Kepemimpinan": title,
+                "Lencana_Diperoleh": badgesText,
+                // Terjemahan Log (True/False ke Text)
+                "Log_S1_Instruksi": scenarioLogs[0] ? "Sukses" : "Gagal",
+                "Log_S2_Data": scenarioLogs[1] ? "Sukses" : "Gagal",
+                "Log_S3_Server": scenarioLogs[2] ? "Sukses" : "Gagal",
+                "Log_S4_Target": scenarioLogs[3] ? "Sukses" : "Gagal"
+            };
+
+            const gasUrl = "https://script.google.com/macros/s/AKfycbxYFAWTiQC0Cxy4mwSNdBslIallQubcrEgtA0LeKTruIQMDYPYyqnaufM-eKqGXZuO3Pw/exec";
+
+            // Proses Fetch menggunakan Content-Type: text/plain mencegah isu preflight CORS
+            fetch(gasUrl, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Data berhasil masuk:", data);
+                // Status UI Menjadi Hijau / Sukses
+                dbIcon.classList.remove('bg-gray-400', 'animate-pulse');
+                dbIcon.classList.add('bg-[var(--success)]');
+                dbText.innerText = "Data Tersimpan!";
+                dbText.classList.replace('text-gray-500', 'text-[var(--success)]');
+                
+                // Aktifkan Ulang Tombol Home
+                btnBack.innerText = "KEMBALI KE BERANDA";
+                btnBack.disabled = false;
+                btnBack.classList.remove('opacity-50', 'cursor-not-allowed');
+            })
+            .catch(error => {
+                console.error("Gagal mengirim data:", error);
+                // Status UI Menjadi Merah / Gagal
+                dbIcon.classList.remove('bg-gray-400', 'animate-pulse');
+                dbIcon.classList.add('bg-[var(--danger)]');
+                dbText.innerText = "Gagal Menyimpan Database";
+                dbText.classList.replace('text-gray-500', 'text-[var(--danger)]');
+
+                // Aktifkan Ulang Tombol Home namun berikan keterangan
+                btnBack.innerText = "KEMBALI KE BERANDA (Tanpa Simpan)";
+                btnBack.disabled = false;
+                btnBack.classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+        }
+
 
         function generateDebrief() {
             const total = scenarios.length;
@@ -969,10 +1052,28 @@
             const badgesDiv = document.getElementById('badgesContainer');
             badgesDiv.innerHTML = '';
             
-            if (score >= 1) badgesDiv.innerHTML += `<div class="neu-box-inset p-2 rounded flex flex-col items-center"><span class="text-2xl">🥉</span><span class="text-[10px] mt-1 font-bold">Jeda 3 Detik</span></div>`;
-            if (score >= 3) badgesDiv.innerHTML += `<div class="neu-box-inset p-2 rounded flex flex-col items-center"><span class="text-2xl">🥈</span><span class="text-[10px] mt-1 font-bold">Master 3T</span></div>`;
-            if (score === 4) badgesDiv.innerHTML += `<div class="neu-box-inset p-2 rounded flex flex-col items-center"><span class="text-2xl">🥇</span><span class="text-[10px] mt-1 font-bold">Thermostat</span></div>`;
-            if (score < 1) badgesDiv.innerHTML = `<span class="text-xs text-gray-400 italic">Belum ada lencana yang terbuka.</span>`;
+            let earnedBadges = [];
+            
+            if (score >= 1) {
+                badgesDiv.innerHTML += `<div class="neu-box-inset p-2 rounded flex flex-col items-center"><span class="text-2xl">🥉</span><span class="text-[10px] mt-1 font-bold">Jeda 3 Detik</span></div>`;
+                earnedBadges.push("Jeda 3 Detik");
+            }
+            if (score >= 3) {
+                badgesDiv.innerHTML += `<div class="neu-box-inset p-2 rounded flex flex-col items-center"><span class="text-2xl">🥈</span><span class="text-[10px] mt-1 font-bold">Master 3T</span></div>`;
+                earnedBadges.push("Master 3T");
+            }
+            if (score === 4) {
+                badgesDiv.innerHTML += `<div class="neu-box-inset p-2 rounded flex flex-col items-center"><span class="text-2xl">🥇</span><span class="text-[10px] mt-1 font-bold">Thermostat</span></div>`;
+                earnedBadges.push("Thermostat");
+            }
+            if (score < 1) {
+                badgesDiv.innerHTML = `<span class="text-xs text-gray-400 italic">Belum ada lencana yang terbuka.</span>`;
+            }
+            
+            let badgesTextString = earnedBadges.length > 0 ? earnedBadges.join(", ") : "Tidak Ada";
+
+            // [TRIGGER TITIK API] - Dipanggil tepat setelah halaman Game Over termuat
+            sendGameDataToGoogleSheets(percentage, title, badgesTextString);
         }
 
     </script>
