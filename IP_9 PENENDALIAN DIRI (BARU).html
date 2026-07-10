@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Crisis Navigator: Resonant Leadership</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #e0e5ec;
+            --neu-light: #ffffff;
+            --neu-dark: #a3b1c6;
+            --primary: #6c5ce7;
+            --accent: #00cec9;
+            --danger: #ff7675;
+            --warning: #fdcb6e;
+            --success: #00b894;
+            --text-main: #2d3436;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            touch-action: pan-y; /* Prevent pinch zoom on mobile */
+        }
+
+        /* Neumorphism Utilities */
+        .neu-box {
+            background: var(--bg-color);
+            box-shadow: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
+            border-radius: 1rem;
+        }
+        
+        .neu-box-inset {
+            background: var(--bg-color);
+            box-shadow: inset 6px 6px 12px var(--neu-dark), inset -6px -6px 12px var(--neu-light);
+            border-radius: 1rem;
+        }
+
+        .neu-btn {
+            background: var(--bg-color);
+            box-shadow: 6px 6px 12px var(--neu-dark), -6px -6px 12px var(--neu-light);
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .neu-btn:active, .neu-btn.active {
+            box-shadow: inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light);
+            color: var(--primary);
+        }
+
+        /* Chat Bubbles */
+        .chat-bubble {
+            max-width: 85%;
+            padding: 0.75rem 1rem;
+            border-radius: 1.2rem;
+            margin-bottom: 0.75rem;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        .chat-left {
+            background: #f1f2f6;
+            color: #2f3542;
+            border-bottom-left-radius: 0.2rem;
+            align-self: flex-start;
+            box-shadow: 3px 3px 6px rgba(0,0,0,0.05);
+        }
+
+        .chat-right {
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 0.2rem;
+            align-self: flex-end;
+            box-shadow: 3px 3px 6px rgba(108, 92, 231, 0.3);
+        }
+
+        /* Animations */
+        @keyframes popIn {
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        .shake-active {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes breathe {
+            0% { transform: scale(1); box-shadow: 0 0 0 rgba(0, 206, 201, 0); }
+            50% { transform: scale(1.15); box-shadow: 0 0 20px rgba(0, 206, 201, 0.6); }
+            100% { transform: scale(1); box-shadow: 0 0 0 rgba(0, 206, 201, 0); }
+        }
+
+        .breathing {
+            animation: breathe 3s ease-in-out infinite;
+            background: linear-gradient(135deg, var(--accent), #74b9ff);
+            color: white !important;
+        }
+
+        /* Thermometer */
+        .thermo-container {
+            width: 20px;
+            height: 100%;
+            background: #dcdde1;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .thermo-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 20%;
+            background: var(--success);
+            transition: height 0.5s ease, background-color 0.5s ease;
+        }
+
+        /* Scrollbar hiding */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex justify-center items-center">
+
+    <!-- Audio Toggle -->
+    <button id="btnAudio" class="fixed top-4 right-4 z-50 neu-btn w-12 h-12 flex justify-center items-center rounded-full text-xl" onclick="toggleAudio()">
+        🔊
+    </button>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-md h-[95vh] sm:h-[90vh] flex flex-col relative rounded-3xl overflow-hidden glass-panel border border-white shadow-2xl">
+        
+        <!-- ================= SCREEN 1: GATEWAY ================= -->
+        <div id="screenGateway" class="absolute inset-0 flex flex-col items-center justify-center p-8 bg-[var(--bg-color)] z-40 transition-opacity duration-500">
+            <div class="text-5xl mb-4">⚓</div>
+            <h1 class="text-2xl font-bold text-center text-[var(--primary)] mb-2">Crisis Navigator</h1>
+            <p class="text-sm text-center text-gray-500 mb-8">Simulasi Grounded Confidence & Resonant Leadership</p>
+            
+            <div class="w-full neu-box p-6 flex flex-col gap-4">
+                <div>
+                    <label class="text-xs font-semibold text-gray-500 ml-2">NAMA LENGKAP</label>
+                    <input type="text" id="inputName" class="w-full mt-1 neu-box-inset p-3 outline-none bg-transparent" placeholder="Ketik nama Anda...">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-gray-500 ml-2">NIK</label>
+                    <input type="number" id="inputNik" class="w-full mt-1 neu-box-inset p-3 outline-none bg-transparent" placeholder="Ketik NIK Anda...">
+                </div>
+                <button onclick="goToBriefing()" class="neu-btn mt-4 py-3 font-bold text-[var(--primary)] w-full">MASUK</button>
+            </div>
+            
+            <p class="absolute bottom-6 text-xs text-gray-400 font-semibold">Education & Training Dept. © 2026</p>
+        </div>
+
+        <!-- ================= SCREEN 2: BRIEFING ================= -->
+        <div id="screenBriefing" class="absolute inset-0 flex flex-col p-8 bg-[var(--bg-color)] z-30 opacity-0 pointer-events-none transition-opacity duration-500 overflow-y-auto">
+            <h2 class="text-xl font-bold text-[var(--primary)] mb-4">Mission Briefing</h2>
+            
+            <div class="neu-box p-5 mb-6 text-sm text-gray-700 leading-relaxed">
+                <p class="mb-3">Halo, <span id="playerNameDisplay" class="font-bold text-[var(--primary)]"></span>!</p>
+                <p class="mb-3">Anda adalah Manager di tengah kesibukan operasional. Hari ini, berbagai krisis akan masuk melalui grup chat "Koordinasi Area".</p>
+                <p class="font-bold mb-1">Misi Anda:</p>
+                <ul class="list-disc pl-4 mb-3 space-y-1">
+                    <li>Menjadi <b>Thermostat</b> (Pengatur Suhu Emosi).</li>
+                    <li>Mencegah kepanikan tim (Emotional Contagion).</li>
+                </ul>
+                <p class="font-bold mb-1">Aturan Main:</p>
+                <ul class="list-disc pl-4 space-y-1">
+                    <li>Saat panik melanda, Anda <b>TIDAK BISA</b> langsung membalas.</li>
+                    <li>Anda WAJIB menahan tombol <b>"Jeda 3 Detik"</b> untuk meregulasi emosi.</li>
+                    <li>Pilih balasan menggunakan rumusan <b>3T</b> (Tubuh, Tone, Tumbuhkan).</li>
+                </ul>
+            </div>
+            
+            <div class="flex-grow"></div>
+            <button onclick="startGame()" class="neu-btn py-4 font-bold text-[var(--success)] w-full text-lg flex justify-center items-center gap-2">
+                🚀 SAYA SIAP MEMIMPIN
+            </button>
+        </div>
+
+        <!-- ================= SCREEN 3: GAME CORE ================= -->
+        <div id="screenGame" class="absolute inset-0 flex flex-col bg-[var(--bg-color)] z-20 opacity-0 pointer-events-none transition-opacity duration-500">
+            <!-- Header -->
+            <div class="neu-box m-4 p-3 flex justify-between items-center z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full neu-box-inset flex justify-center items-center text-xl">👥</div>
+                    <div>
+                        <h3 class="font-bold text-sm">Grup Koordinasi Area</h3>
+                        <p class="text-[10px] text-gray-500">12 Anggota Aktif</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 text-xs font-bold items-center">
+                    <span class="text-gray-500">Misi: <span id="missionProgress">1/10</span></span>
+                </div>
+            </div>
+
+            <!-- Main Chat Area & Thermometer -->
+            <div class="flex flex-row flex-grow overflow-hidden relative">
+                <!-- Chat View -->
+                <div id="chatArea" class="flex-grow flex flex-col p-4 overflow-y-auto pb-32">
+                    <!-- Chats will be appended here -->
+                </div>
+                
+                <!-- Thermometer -->
+                <div class="w-12 h-full flex flex-col items-center py-4 pr-2">
+                    <span class="text-[10px] font-bold text-center mb-2 text-gray-500 leading-tight">Suhu<br>Emosi</span>
+                    <div class="thermo-container">
+                        <div id="thermoFill" class="thermo-fill"></div>
+                    </div>
+                    <span class="text-xl mt-2">🌡️</span>
+                </div>
+            </div>
+
+            <!-- Interaction Panel (Bottom) -->
+            <div id="interactionPanel" class="absolute bottom-0 w-full glass-panel rounded-t-3xl p-5 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] transform transition-transform duration-300">
+                
+                <!-- State 1: Hold to Pause -->
+                <div id="uiHold" class="flex flex-col items-center justify-center py-2">
+                    <p class="text-xs text-center text-gray-500 mb-3 font-semibold w-64">Sebagai pemimpin, ketenangan Anda adalah jangkar mereka.</p>
+                    <button id="btnHold" class="neu-btn w-32 h-32 rounded-full flex flex-col justify-center items-center select-none outline-none">
+                        <span class="text-3xl mb-1 pointer-events-none">🫁</span>
+                        <span class="text-[10px] font-bold pointer-events-none text-center leading-tight">TAHAN<br>3 DETIK</span>
+                    </button>
+                    <div class="w-full bg-gray-200 h-1 mt-4 rounded-full overflow-hidden">
+                        <div id="holdProgress" class="h-full bg-[var(--primary)] w-0 transition-all duration-75"></div>
+                    </div>
+                </div>
+
+                <!-- State 2: Select Response (3T) -->
+                <div id="uiResponse" class="hidden flex-col gap-3">
+                    <p class="text-xs font-bold text-center text-gray-600">Pilih Respons (Rumus 3T):</p>
+                    <button onclick="selectResponse(0)" class="neu-btn p-3 text-left text-xs text-gray-700 leading-snug" id="btnResp0">Resp 1</button>
+                    <button onclick="selectResponse(1)" class="neu-btn p-3 text-left text-xs text-gray-700 leading-snug" id="btnResp1">Resp 2</button>
+                </div>
+
+                <!-- State 3: Select Delivery Mode (Tone & Posture mapping) -->
+                <div id="uiDelivery" class="hidden flex-col gap-3">
+                    <p class="text-xs font-bold text-center text-gray-600">Pilih Cara Penyampaian (Tone):</p>
+                    <button onclick="selectDelivery(0)" class="neu-btn p-3 text-left text-xs text-gray-700 leading-snug flex items-center gap-3" id="btnDel0">
+                        <span class="text-xl">🎙️</span> <span>Mode 1</span>
+                    </button>
+                    <button onclick="selectDelivery(1)" class="neu-btn p-3 text-left text-xs text-gray-700 leading-snug flex items-center gap-3" id="btnDel1">
+                        <span class="text-xl">⌨️</span> <span>Mode 2</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SCREEN 4: DEBRIEF ================= -->
+        <div id="screenDebrief" class="absolute inset-0 flex flex-col p-8 bg-[var(--bg-color)] z-50 opacity-0 pointer-events-none transition-opacity duration-500 overflow-y-auto items-center text-center">
+            <h2 class="text-2xl font-bold text-[var(--primary)] mt-6 mb-2">Simulasi Selesai!</h2>
+            <div id="finalAvatar" class="text-6xl mb-4">🏆</div>
+            
+            <div class="neu-box-inset w-full p-6 mb-6">
+                <p class="text-sm text-gray-500 font-semibold">SKOR KEPEMIMPINAN</p>
+                <h1 id="finalScore" class="text-5xl font-bold text-[var(--primary)] my-2">85%</h1>
+                <p id="finalTitle" class="text-lg font-bold text-[var(--success)]">Resonant Leader</p>
+            </div>
+            
+            <div class="w-full text-left neu-box p-5 mb-6 text-sm">
+                <p class="font-bold mb-2">Feedback Profil:</p>
+                <p id="finalFeedback" class="text-gray-700 leading-relaxed"></p>
+            </div>
+
+            <div class="w-full text-left neu-box p-5 mb-6 text-sm">
+                <p class="font-bold mb-2 text-[var(--warning)]">Lencana Diperoleh:</p>
+                <div id="badgesContainer" class="flex gap-2 justify-start flex-wrap">
+                    <!-- Badges injected here -->
+                </div>
+            </div>
+            
+            <button onclick="location.reload()" class="neu-btn py-4 font-bold text-gray-600 w-full mb-8">KEMBALI KE BERANDA</button>
+        </div>
+
+    </div>
+
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        // --- 1. DATA SCENARIOS (Based on IP9.1 & IP9.2) ---
+        const scenarios = [
+            {
+                trigger: [
+                    { sender: "Budi (Spv)", text: "Pak, gawat! Instruksi mendadak turun, jadwal Stock Opname dimajukan 3 hari!" },
+                    { sender: "Siti (Shift)", text: "Aduh gimana ini Pak? Promo akhir pekan saja belum beres. Anak-anak shift malam sudah kelelahan semua." }
+                ],
+                responses: [
+                    {
+                        text: "Saya paham ini mendadak dan memberatkan. Tapi kita punya tim yang gesit. Kita bagi 2 tim, saya akan pimpin pembagian tugas di briefing sore ini.",
+                        isCorrect: true
+                    },
+                    {
+                        text: "Sudah, jangan banyak alasan dulu! Instruksinya memang begitu. Pokoknya semua lembur malam ini sampai beres!",
+                        isCorrect: false
+                    }
+                ],
+                deliveries: [
+                    { icon: "🎙️", desc: "Voice Note: Nada suara stabil, berat, dan tempo lambat.", isCorrect: true },
+                    { icon: "⌨️", desc: "Teks (CAPSLOCK): Ketik cepat dengan huruf besar agar sadar urgensi.", isCorrect: false }
+                ],
+                feedback: {
+                    success: "Anda berhasil jadi 'Jangkar'. Validasi emosi dan solusi nyata menurunkan panik.",
+                    fail: "Gagal. Otoriter tanpa empati membuat tim defensif dan merasa tidak aman."
+                },
+                teamReply: {
+                    success: "Baik Pak. Kalau Bapak turun tangan dan strateginya jelas, kami siap tempur.",
+                    fail: "Terserah Bapak saja. Kalau besok banyak yang sakit jangan salahkan kami."
+                }
+            },
+            {
+                trigger: [
+                    { sender: "Andi (Admin)", text: "Pak, sales kita menurun beberapa bulan ini. Tiba-tiba HO minta data lengkap 3 bulan terakhir sekarang juga!" }
+                ],
+                responses: [
+                    {
+                        text: "Kenapa bisa begini?! Cepat cari datanya, jangan sampai saya yang kena marah HO karena kerjaan kalian lambat!",
+                        isCorrect: false
+                    },
+                    {
+                        text: "Memang mengejutkan datanya diminta sekarang. Jangan panik, Andi tolong tarik data bulan 1-2, saya akan bantu rapikan data bulan 3.",
+                        isCorrect: true
+                    }
+                ],
+                deliveries: [
+                    { icon: "😀", desc: "Teks dengan emoticon senyum tipis untuk meredakan ketegangan.", isCorrect: true },
+                    { icon: "❗", desc: "Teks dengan tanda seru banyak agar bergerak cepat.", isCorrect: false }
+                ],
+                feedback: {
+                    success: "Tepat! Anda bertindak sebagai 'Thermostat' yang mendinginkan suasana.",
+                    fail: "Menjadi 'Thermometer'! Emosi Anda yang panas membuat tim makin kacau."
+                },
+                teamReply: {
+                    success: "Siap Pak, terima kasih arahannya. Saya tarik data bulan 1 dan 2 sekarang.",
+                    fail: "Aduh, iya Pak, ini lagi dicari tapi sistemnya agak lemot, sebentar ya..."
+                }
+            },
+            {
+                trigger: [
+                    { sender: "Tono (Spv)", text: "Server kasir down di jam sibuk!! Beberapa pelanggan sudah complain karena sudah menunggu cukup lama" }
+                ],
+                responses: [
+                    {
+                        text: "Oke, sekarang semua tenang. Kita koordinasi ke EDP terlebih dahulu sambil menjelaskan ke pelanggan bahwa saat ini situasinya sedang ada server down.",
+                        isCorrect: true
+                    },
+                    {
+                        text: "Aduh Tono, kenapa down sekarang sih?! Coba restart lagi! Yang kasir pokoknya tangani cepat, jangan diam saja!",
+                        isCorrect: false
+                    }
+                ],
+                deliveries: [
+                    { icon: "🚶", desc: "Berdiri tegak, bahu turun (Tubuh Terbuka) saat mengirim instruksi.", isCorrect: true },
+                    { icon: "🚶", desc: "Mondar-mandir, menggigit kuku saat mengirim instruksi.", isCorrect: false }
+                ],
+                feedback: {
+                    success: "Postur tubuh terbuka menurunkan hormon stres Anda, memancar ke instruksi yang solid.",
+                    fail: "Gerakan panik mentransfer stres ke tim, membuat penyelesaian masalah terhambat."
+                },
+                teamReply: {
+                    success: "Siap Pak, kami segera hubungi EDP dan bantu jelaskan ke pelanggan.",
+                    fail: "Makin panik Pak kalau disuruh cepat tapi sistemnya mati!"
+                }
+            },
+            {
+                trigger: [
+                    { sender: "Tim", text: "Pak untuk beberapa produk masih belum laku, target penjualan juga masih kurang. Kami sudah jualkan namun banyak pelanggan yang tidak membeli." }
+                ],
+                responses: [
+                    {
+                        text: "Kalian lemah banget sih! Tinggal 10% lagi masa nyerah?! Ayo semangat dikit dong, push terus!",
+                        isCorrect: false
+                    },
+                    {
+                        text: "Kalian luar biasa sudah bertahan sampai detik ini. Saya apresiasi banget. Yuk, tahan sedikit lagi. Apapun hasilnya nanti, kita hadapi bareng.",
+                        isCorrect: true
+                    }
+                ],
+                deliveries: [
+                    { icon: "💪", desc: "Kirim pesan sambil memberikan semangat ke tim.", isCorrect: true },
+                    { icon: "😠", desc: "Kirim pesan dengan emoji marah untuk 'memaksa' semangat.", isCorrect: false }
+                ],
+                feedback: {
+                    success: "Validasi kelelahan mereka. Ketenangan Anda memberi rasa aman untuk berjuang hingga akhir.",
+                    fail: "Toxic positivity. Mengabaikan kelelahan fisik mereka akan memicu demotivasi total."
+                },
+                teamReply: {
+                    success: "Makasih Pak pengertiannya. Siap, kita gaspol sampai detik terakhir!",
+                    fail: "(Hanya diread oleh 12 orang tanpa balasan)."
+                }
+            }
+        ];
+
+        // --- 2. GAME STATE & VARIABLES ---
+        let playerName = "";
+        let playerNik = "";
+        let currentQuestion = 0;
+        let score = 0;
+        let thermoLevel = 30; // 0 to 100
+        let audioEnabled = false;
+        
+        let holdTimer = null;
+        let holdTimeMs = 0;
+        const HOLD_REQUIRED = 3000; // 3 seconds
+        let isHolding = false;
+        let holdInterval = null;
+
+        let selectedResponseData = null;
+
+        // --- 3. AUDIO ENGINE (Web Audio API) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let bgmOsc = null;
+        let bgmGain = null;
+        let bgmInterval = null;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            audioEnabled = true;
+            document.getElementById('btnAudio').innerHTML = '🔊';
+            if(!bgmOsc) playBGM();
+        }
+
+        function toggleAudio() {
+            if(!audioCtx) initAudio();
+            else {
+                audioEnabled = !audioEnabled;
+                document.getElementById('btnAudio').innerHTML = audioEnabled ? '🔊' : '🔇';
+                if(bgmGain) {
+                    bgmGain.gain.cancelScheduledValues(audioCtx.currentTime);
+                    // Sesuaikan volume maksimal dengan volume lagu baru (0.1)
+                    bgmGain.gain.setTargetAtTime(audioEnabled ? 0.1 : 0, audioCtx.currentTime, 0.1);
+                }
+            }
+        }
+
+        function playSynth(freq, type, duration, vol=0.1) {
+            if (!audioEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playBGM() {
+            if (!audioCtx) return;
+            
+            // Hentikan BGM sebelumnya jika ada
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+            }
+
+            bgmGain = audioCtx.createGain();
+            // Volume sedikit diturunkan (0.1) karena nada lebih cepat agar tidak berisik
+            bgmGain.gain.value = audioEnabled ? 0.1 : 0; 
+            bgmGain.connect(audioCtx.destination);
+            
+            // Nada C Major yang ceria dan melompat-lompat (Bouncy Synth)
+            const notes = [
+                261.63, // C4
+                329.63, // E4
+                392.00, // G4
+                523.25, // C5
+                392.00, // G4
+                329.63, // E4
+                261.63, // C4
+                293.66  // D4
+            ]; 
+            let noteIdx = 0;
+            
+            function scheduleNextNote() {
+                if(!audioEnabled || !audioCtx) return;
+                
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine'; // Sine wave untuk suara bulat dan imut
+                osc.frequency.setValueAtTime(notes[noteIdx], audioCtx.currentTime);
+                
+                const env = audioCtx.createGain();
+                env.gain.setValueAtTime(0, audioCtx.currentTime);
+                // Efek "Pluck" / Marimba: Serangan suara cepat, lalu memudar seketika
+                env.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+                env.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3); 
+                
+                osc.connect(env);
+                env.connect(bgmGain);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4); // Potong suara agar terdengar "bouncy"
+                
+                noteIdx = (noteIdx + 1) % notes.length;
+            }
+            
+            scheduleNextNote();
+            
+            // Loop lebih cepat untuk kesan ceria dan energik (tiap 350ms)
+            bgmInterval = setInterval(scheduleNextNote, 350); 
+            
+            bgmOsc = true; 
+        }
+
+        function sfxNotification() {
+            playSynth(800, 'sine', 0.1, 0.1);
+            setTimeout(() => playSynth(1000, 'sine', 0.2, 0.1), 100);
+        }
+
+        let holdOsc = null;
+        let holdGain = null;
+        
+        function startHoldSound() {
+            if (!audioCtx || !audioEnabled) return;
+            stopHoldSound(); // Pastikan tidak ada suara menumpuk
+            
+            holdOsc = audioCtx.createOscillator();
+            holdGain = audioCtx.createGain();
+            
+            holdOsc.type = 'sine';
+            // Frekuensi naik perlahan dari 200hz ke 600hz selama 3 detik (menggambarkan tarikan napas/ketegangan)
+            holdOsc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            holdOsc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 3);
+            
+            holdGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            holdGain.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.5);
+            
+            holdOsc.connect(holdGain);
+            holdGain.connect(audioCtx.destination);
+            holdOsc.start();
+        }
+
+        function stopHoldSound() {
+            if (holdGain && holdOsc) {
+                try {
+                    holdGain.gain.cancelScheduledValues(audioCtx.currentTime);
+                    holdGain.gain.setValueAtTime(holdGain.gain.value, audioCtx.currentTime);
+                    holdGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+                    const oscToStop = holdOsc; // simpan referensi
+                    setTimeout(() => {
+                        if (oscToStop) {
+                            try { oscToStop.stop(); } catch(e){}
+                        }
+                    }, 100);
+                } catch(e) {}
+                holdOsc = null;
+                holdGain = null;
+            }
+        }
+
+        function sfxHoldComplete() {
+            stopHoldSound(); // Hentikan suara tarikan napas
+            playSynth(440, 'sine', 0.2, 0.1);
+            setTimeout(() => playSynth(659, 'sine', 0.4, 0.1), 150); // Bunyi "Ting" melegakan
+        }
+
+        function sfxCorrect() {
+            // Suara ceria (Nada Mayor naik)
+            playSynth(523.25, 'sine', 0.1, 0.1); // C5
+            setTimeout(() => playSynth(659.25, 'sine', 0.1, 0.1), 100); // E5
+            setTimeout(() => playSynth(783.99, 'sine', 0.3, 0.1), 200); // G5
+        }
+
+        function sfxWrong() {
+            // Suara error/negatif (Nada rendah turun / buzz)
+            playSynth(150, 'sawtooth', 0.2, 0.1);
+            setTimeout(() => playSynth(130, 'sawtooth', 0.3, 0.1), 150);
+        }
+
+        function sfxGameStart() {
+            // Suara saat masuk ke permainan utama (seperti level up cepat)
+            playSynth(261.63, 'sine', 0.1, 0.1); // C4
+            setTimeout(() => playSynth(329.63, 'sine', 0.1, 0.1), 100); // E4
+            setTimeout(() => playSynth(392.00, 'sine', 0.2, 0.1), 200); // G4
+            setTimeout(() => playSynth(523.25, 'sine', 0.4, 0.1), 300); // C5
+        }
+
+        function sfxWinGame() {
+            // Suara ucapan selamat (fanfare meriah)
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+            notes.forEach((freq, idx) => {
+                setTimeout(() => playSynth(freq, 'square', 0.2, 0.05), idx * 150);
+            });
+            setTimeout(() => playSynth(1046.50, 'square', 0.6, 0.05), notes.length * 150);
+        }
+
+        function sfxLoseGame() {
+            // Suara game over / gagal (nada sumbang turun)
+            const notes = [300, 280, 250, 200];
+            notes.forEach((freq, idx) => {
+                setTimeout(() => playSynth(freq, 'sawtooth', 0.3, 0.1), idx * 250);
+            });
+        }
+
+
+        // --- 4. GAME LOGIC & UI FLOW ---
+
+        function goToBriefing() {
+            playerName = document.getElementById('inputName').value.trim() || 'Leader';
+            playerNik = document.getElementById('inputNik').value.trim() || '000000';
+            
+            document.getElementById('playerNameDisplay').innerText = playerName;
+            
+            // Init audio context on first user interaction to bypass browser autoplay policy
+            if(!audioCtx) initAudio();
+
+            document.getElementById('screenGateway').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('screenGateway').classList.add('hidden');
+                document.getElementById('screenBriefing').classList.remove('pointer-events-none');
+                document.getElementById('screenBriefing').style.opacity = 1;
+            }, 500);
+        }
+
+        function startGame() {
+            sfxGameStart(); // Panggil efek suara saat masuk game
+            document.getElementById('screenBriefing').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('screenBriefing').classList.add('hidden');
+                document.getElementById('screenGame').classList.remove('pointer-events-none');
+                document.getElementById('screenGame').style.opacity = 1;
+                loadScenario();
+            }, 500);
+        }
+
+        function updateThermometer(value) {
+            // value is delta.
+            thermoLevel += value;
+            if (thermoLevel < 10) thermoLevel = 10;
+            if (thermoLevel > 95) thermoLevel = 95;
+            
+            const thermoBar = document.getElementById('thermoFill');
+            thermoBar.style.height = `${thermoLevel}%`;
+            
+            if (thermoLevel < 40) {
+                thermoBar.style.backgroundColor = 'var(--success)';
+            } else if (thermoLevel < 70) {
+                thermoBar.style.backgroundColor = 'var(--warning)';
+            } else {
+                thermoBar.style.backgroundColor = 'var(--danger)';
+            }
+        }
+
+        function addChatMessage(sender, text, isRight = false) {
+            const chatArea = document.getElementById('chatArea');
+            const align = isRight ? 'chat-right' : 'chat-left';
+            const nameColor = isRight ? 'text-white' : 'text-[var(--primary)]';
+            
+            const msgHtml = `
+                <div class="chat-bubble ${align} flex flex-col">
+                    <span class="text-[10px] font-bold ${nameColor} mb-1">${sender}</span>
+                    <span class="text-sm">${text}</span>
+                </div>
+            `;
+            chatArea.insertAdjacentHTML('beforeend', msgHtml);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            if(!isRight) sfxNotification();
+        }
+
+        function triggerScreenShake() {
+            const container = document.getElementById('screenGame');
+            container.classList.add('shake-active');
+            setTimeout(() => container.classList.remove('shake-active'), 400);
+        }
+
+        // --- SCENARIO EXECUTION ---
+
+        function loadScenario() {
+            if (currentQuestion >= scenarios.length) {
+                endGame();
+                return;
+            }
+
+            // Reset UI
+            document.getElementById('chatArea').innerHTML = '';
+            document.getElementById('missionProgress').innerText = `${currentQuestion + 1}/${scenarios.length}`;
+            resetInteractionPanel();
+            
+            const q = scenarios[currentQuestion];
+            
+            // 1. Simulate incoming messages
+            let delay = 500;
+            q.trigger.forEach((msg, idx) => {
+                setTimeout(() => {
+                    addChatMessage(msg.sender, msg.text, false);
+                    triggerScreenShake();
+                    updateThermometer(15); // Spike tension
+                }, delay);
+                delay += 1200;
+            });
+
+            // 2. Show HOLD button after messages finish
+            setTimeout(() => {
+                document.getElementById('uiHold').classList.remove('hidden');
+                document.getElementById('uiHold').classList.add('flex');
+                setupHoldButton();
+            }, delay + 500);
+        }
+
+        function resetInteractionPanel() {
+            document.getElementById('uiHold').classList.add('hidden');
+            document.getElementById('uiHold').classList.remove('flex');
+            document.getElementById('uiResponse').classList.add('hidden');
+            document.getElementById('uiResponse').classList.remove('flex');
+            document.getElementById('uiDelivery').classList.add('hidden');
+            document.getElementById('uiDelivery').classList.remove('flex');
+            
+            // reset button visual
+            const btn = document.getElementById('btnHold');
+            btn.classList.remove('breathing');
+            document.getElementById('holdProgress').style.width = '0%';
+        }
+
+        // --- MECHANIC: JEDA 3 DETIK ---
+
+        function setupHoldButton() {
+            const btn = document.getElementById('btnHold');
+            
+            // Remove old listeners to prevent duplication
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('mousedown', startHold);
+            newBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(); }, {passive: false});
+            
+            window.addEventListener('mouseup', cancelHold);
+            window.addEventListener('touchend', cancelHold);
+        }
+
+        function startHold() {
+            if(isHolding) return;
+            isHolding = true;
+            holdTimeMs = 0;
+            
+            const btn = document.getElementById('btnHold');
+            const progress = document.getElementById('holdProgress');
+            btn.classList.add('breathing');
+            
+            startHoldSound(); // Memulai suara tarikan napas (nada naik perlahan)
+            
+            holdInterval = setInterval(() => {
+                holdTimeMs += 50; // update every 50ms
+                let pct = (holdTimeMs / HOLD_REQUIRED) * 100;
+                progress.style.width = `${pct}%`;
+                
+                // Tick dihapus, diganti sweep frekuensi continuous
+                
+                if (holdTimeMs >= HOLD_REQUIRED) {
+                    completeHold();
+                }
+            }, 50);
+        }
+
+        function cancelHold() {
+            if(!isHolding) return;
+            isHolding = false;
+            clearInterval(holdInterval);
+            document.getElementById('btnHold').classList.remove('breathing');
+            document.getElementById('holdProgress').style.width = '0%';
+            stopHoldSound(); // Hentikan suara jika dilepas sebelum 3 detik
+        }
+
+        function completeHold() {
+            cancelHold();
+            sfxHoldComplete();
+            updateThermometer(-10); // calming down a bit
+            
+            // Transition to Response Selection
+            document.getElementById('uiHold').classList.add('hidden');
+            document.getElementById('uiHold').classList.remove('flex');
+            showResponseSelection();
+        }
+
+        // --- MECHANIC: SELECT 3T RESPONSE ---
+
+        function showResponseSelection() {
+            const q = scenarios[currentQuestion];
+            const ui = document.getElementById('uiResponse');
+            
+            // Shuffle options slightly (just swap sometimes)
+            const isSwapped = Math.random() > 0.5;
+            
+            document.getElementById('btnResp0').innerText = q.responses[isSwapped ? 1 : 0].text;
+            document.getElementById('btnResp0').dataset.correct = q.responses[isSwapped ? 1 : 0].isCorrect;
+            document.getElementById('btnResp0').dataset.text = q.responses[isSwapped ? 1 : 0].text;
+            
+            document.getElementById('btnResp1').innerText = q.responses[isSwapped ? 0 : 1].text;
+            document.getElementById('btnResp1').dataset.correct = q.responses[isSwapped ? 0 : 1].isCorrect;
+            document.getElementById('btnResp1').dataset.text = q.responses[isSwapped ? 0 : 1].text;
+
+            ui.classList.remove('hidden');
+            ui.classList.add('flex');
+        }
+
+        function selectResponse(idx) {
+            const btn = document.getElementById(`btnResp${idx}`);
+            selectedResponseData = {
+                text: btn.dataset.text,
+                isCorrect: btn.dataset.correct === 'true'
+            };
+            
+            document.getElementById('uiResponse').classList.add('hidden');
+            document.getElementById('uiResponse').classList.remove('flex');
+            showDeliverySelection();
+        }
+
+        // --- MECHANIC: SELECT DELIVERY TONE ---
+
+        function showDeliverySelection() {
+            const q = scenarios[currentQuestion];
+            const ui = document.getElementById('uiDelivery');
+            
+            const isSwapped = Math.random() > 0.5;
+            
+            const del0 = q.deliveries[isSwapped ? 1 : 0];
+            document.getElementById('btnDel0').innerHTML = `<span class="text-xl">${del0.icon}</span> <span>${del0.desc}</span>`;
+            document.getElementById('btnDel0').dataset.correct = del0.isCorrect;
+            
+            const del1 = q.deliveries[isSwapped ? 0 : 1];
+            document.getElementById('btnDel1').innerHTML = `<span class="text-xl">${del1.icon}</span> <span>${del1.desc}</span>`;
+            document.getElementById('btnDel1').dataset.correct = del1.isCorrect;
+
+            ui.classList.remove('hidden');
+            ui.classList.add('flex');
+        }
+
+        function selectDelivery(idx) {
+            const btn = document.getElementById(`btnDel${idx}`);
+            const deliveryIsCorrect = btn.dataset.correct === 'true';
+            
+            document.getElementById('uiDelivery').classList.add('hidden');
+            document.getElementById('uiDelivery').classList.remove('flex');
+            
+            processTurn(selectedResponseData.isCorrect, deliveryIsCorrect);
+        }
+
+        // --- PROCESS & FEEDBACK ---
+
+        function processTurn(respCorrect, delCorrect) {
+            const q = scenarios[currentQuestion];
+            
+            // Post player message
+            addChatMessage("Anda (Manager)", selectedResponseData.text, true);
+            
+            // Calculate outcome
+            let isTotalSuccess = respCorrect && delCorrect;
+            let feedbackText = "";
+            let teamReplyText = "";
+            
+            if (isTotalSuccess) {
+                sfxCorrect();
+                score++;
+                updateThermometer(-30);
+                feedbackText = q.feedback.success;
+                teamReplyText = q.teamReply.success;
+            } else {
+                sfxWrong();
+                updateThermometer(30);
+                triggerScreenShake();
+                feedbackText = q.feedback.fail;
+                teamReplyText = q.teamReply.fail;
+            }
+
+            // Post team reply
+            setTimeout(() => {
+                addChatMessage("Tim Operasional", teamReplyText, false);
+                
+                // Show floating feedback logic
+                setTimeout(() => {
+                    showInGameFeedback(isTotalSuccess, feedbackText);
+                }, 1000);
+            }, 1000);
+        }
+
+        function showInGameFeedback(isSuccess, text) {
+            const chatArea = document.getElementById('chatArea');
+            const bgClass = isSuccess ? 'bg-[var(--success)]' : 'bg-[var(--danger)]';
+            const html = `
+                <div class="w-full mt-4 p-3 rounded-xl ${bgClass} text-white text-xs font-bold shadow-lg text-center animate-pulse">
+                    [SYSTEM INSIGHT] ${text}
+                </div>
+                <button onclick="nextQuestion()" class="mt-4 neu-btn w-full py-2 text-[var(--primary)] font-bold text-sm">LANJUTKAN ⏭️</button>
+            `;
+            chatArea.insertAdjacentHTML('beforeend', html);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            loadScenario();
+        }
+
+        // --- END GAME & DEBRIEF ---
+
+        function endGame() {
+            document.getElementById('screenGame').style.opacity = 0;
+            
+            // Mengecilkan volume BGM (Fade out ringan) saat akhir permainan
+            if (bgmGain && audioCtx) {
+                 bgmGain.gain.cancelScheduledValues(audioCtx.currentTime);
+                 bgmGain.gain.setTargetAtTime(0.02, audioCtx.currentTime, 0.5); 
+            }
+
+            setTimeout(() => {
+                document.getElementById('screenGame').classList.add('hidden');
+                document.getElementById('screenDebrief').classList.remove('pointer-events-none');
+                document.getElementById('screenDebrief').style.opacity = 1;
+                generateDebrief();
+            }, 500);
+        }
+
+        function generateDebrief() {
+            const total = scenarios.length;
+            const percentage = Math.round((score / total) * 100);
+            
+            document.getElementById('finalScore').innerText = `${percentage}%`;
+            
+            let title = "";
+            let feedback = "";
+            let avatar = "";
+            
+            if (percentage >= 75) {
+                title = "Resonant Leader";
+                document.getElementById('finalTitle').className = "text-xl font-bold text-[var(--success)]";
+                feedback = `Luar biasa, ${playerName}! Anda berhasil menguasai "Grounded Confidence". Anda terbukti bisa mengambil "Jeda 3 Detik" di saat kritis dan menggunakan rumus 3T. Ketenangan Anda menjadi jangkar yang kokoh sehingga tim merasa aman (Psychological Safety) dan tidak tertular kepanikan (Emotional Contagion).`;
+                avatar = "🌟";
+                sfxWinGame(); // Musik Kemenangan
+            } else if (percentage >= 50) {
+                title = "Developing Leader";
+                document.getElementById('finalTitle').className = "text-xl font-bold text-[var(--warning)]";
+                feedback = `Kerja bagus, ${playerName}. Anda sudah mulai memahami konsep Thermostat, namun di beberapa situasi krusial insting defensif masih muncul. Ingat, saat kepanikan tim memuncak, nada bicara yang tenang jauh lebih berwibawa daripada perintah yang keras.`;
+                avatar = "⚖️";
+                sfxCorrect(); // Musik Biasa (Level Menengah)
+            } else {
+                title = "Dissonant Leader (The Thermometer)";
+                document.getElementById('finalTitle').className = "text-xl font-bold text-[var(--danger)]";
+                feedback = `${playerName}, saat ini gaya kepemimpinan Anda masih seperti "Thermometer" — ikut memanas saat situasi krisis. Reaksi terburu-buru dan nada tinggi membuat tim kehilangan rasa aman. Mari pelajari lagi teori Primal Leadership dan praktikkan "Jeda 3 Detik" sebelum merespons masalah.`;
+                avatar = "🌋";
+                sfxLoseGame(); // Musik Kalah
+            }
+            
+            document.getElementById('finalTitle').innerText = title;
+            document.getElementById('finalFeedback').innerText = feedback;
+            document.getElementById('finalAvatar').innerText = avatar;
+
+            // Badges System updated for 4 missions
+            const badgesDiv = document.getElementById('badgesContainer');
+            badgesDiv.innerHTML = '';
+            
+            if (score >= 1) badgesDiv.innerHTML += `<div class="neu-box-inset p-2 rounded flex flex-col items-center"><span class="text-2xl">🥉</span><span class="text-[10px] mt-1 font-bold">Jeda 3 Detik</span></div>`;
+            if (score >= 3) badgesDiv.innerHTML += `<div class="neu-box-inset p-2 rounded flex flex-col items-center"><span class="text-2xl">🥈</span><span class="text-[10px] mt-1 font-bold">Master 3T</span></div>`;
+            if (score === 4) badgesDiv.innerHTML += `<div class="neu-box-inset p-2 rounded flex flex-col items-center"><span class="text-2xl">🥇</span><span class="text-[10px] mt-1 font-bold">Thermostat</span></div>`;
+            if (score < 1) badgesDiv.innerHTML = `<span class="text-xs text-gray-400 italic">Belum ada lencana yang terbuka.</span>`;
+        }
+
+    </script>
+</body>
+</html>
